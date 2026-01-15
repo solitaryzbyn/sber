@@ -11,7 +11,7 @@
 
 
         window.TwCheese = {
-            ROOT: 'https://cheesasaurus.github.io/twcheese',
+            ROOT: 'https://solitaryzbyn.github.io/sber',
             version: '1.10-1-g972349d',
             tools: {},
             lastToolUsedId: null,
@@ -101,3 +101,4 @@
     }
 
 })();
+
