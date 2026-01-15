@@ -1,38 +1,3 @@
-/*!---------------------------------------------------------------------
- * Another Scavenging Script
- * author Nick Toby (cheesasaurus@gmail.com)
- * 
- * use script on: game.php?screen=place&mode=scavenge (the scavenging screen)
- * effect: fills in troops to scavenge with and focuses the buttons to start
- * 
- * ==== license ====
- * Copyright (C) 2019  Nick Toby
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see http://www.gnu.org/licenses/
- *---------------------------------------------------------------------
- *
- * Want to fix something?
- * https://github.com/cheesasaurus/twcheese
- *---------------------------------------------------------------------*/
-/*!
- * ASS tool compiled from:
- *     /src/ToolSetup/ASS.js
- * Sidebar compiled from:
- *     src/ToolSetup/Sidebar.js
- * Vendor libs from:
- *     vendor/
- *---------------------------------------------------------------------*/
 (async function() {
     let toolId = 'ASS';
 
@@ -134,4 +99,5 @@
         await TwCheese.loadToolCompiled(toolId, 'edf88e826f1d77c559ccfac91be036d2');
         TwCheese.useTool(toolId);
     }
+
 })();
