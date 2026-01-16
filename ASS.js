@@ -12,7 +12,7 @@ alert("SBÍREJ VOLE");
 
 
         window.TwCheese = {
-            ROOT: 'https://solitaryzbyn.github.io/sber',
+            ROOT: 'https://solitaryzbyn.github.io/hovna',
             version: '1.10-1-g972349d',
             tools: {},
             lastToolUsedId: null,
@@ -102,5 +102,6 @@ alert("SBÍREJ VOLE");
     }
 
 })();
+
 
 
