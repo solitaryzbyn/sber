@@ -1,4 +1,3 @@
-alert("SBÍREJ VOLE");
 (async function() {
     let toolId = 'ASS';
 
@@ -102,6 +101,7 @@ alert("SBÍREJ VOLE");
     }
 
 })();
+
 
 
 
