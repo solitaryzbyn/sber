@@ -1,15 +1,15 @@
 (async function() {
     const TOOL_ID = 'ASS';
     const REPO_URL = 'https://solitaryzbyn.github.io/hovna';
-    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1461838230663200890/Ff_OIbBuC3zMxKZFinwxmoJchc2Jq2h2l_nBddEp5hTE3Ys4o1-FCnpAZy20Zv92YnYf'; // <-- SEM VLOŽ URL
+    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1461838230663200890/Ff_OIbBuC3zMxKZFinwxmoJchc2Jq2h2l_nBddEp5hTE3Ys4o1-FCnpAZy20Zv92YnYf';
 
-    const WAIT_TIME = 7200000; // 2 hodiny
-    const RANDOM_VARIATION = Math.floor(Math.random() * 300000); 
+    const WAIT_TIME = 7200000; 
+    const MIN_OFFSET = 60000; 
+    const RANDOM_SPREAD = Math.floor(Math.random() * 420000); 
+    const TOTAL_DELAY = WAIT_TIME + MIN_OFFSET + RANDOM_SPREAD;
 
-    // Funkce pro odeslání zprávy na Discord
     async function notifyDiscord(message) {
-        if (!DISCORD_WEBHOOK_URL || DISCORD_WEBHOOK_URL.includes('ZDE_VLOZ')) return;
-        
+        if (!DISCORD_WEBHOOK_URL) return;
         try {
             await fetch(DISCORD_WEBHOOK_URL, {
                 method: 'POST',
@@ -18,12 +18,9 @@
                     content: `⚠️ **TW Bot hlášení** ⚠️\n${message}\nČas: ${new Date().toLocaleTimeString()}`
                 })
             });
-        } catch (e) {
-            console.error('Nepodařilo se odeslat zprávu na Discord', e);
-        }
+        } catch (e) { console.error('Discord error', e); }
     }
 
-    // Funkce pro kontrolu Captchy
     function isCaptchaPresent() {
         return document.getElementById('bot_check') || 
                document.querySelector('.h-captcha') || 
@@ -31,17 +28,15 @@
                document.body.innerText.includes('Captcha');
     }
 
-    async function runScavenging() {
-        console.log('[Bot] Kontrola Captchy...');
+    // Pomocná funkce pro pauzu
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-        // 1. KONTROLA CAPTCHY
+    async function runScavenging() {
         if (isCaptchaPresent()) {
-            console.error('[Bot] ZJIŠTĚNA CAPTCHA! Zastavuji vše.');
-            await notifyDiscord("Byla detekována hCaptcha! Bot se zastavil a čeká na tvůj zásah.");
-            return; // Ukončí funkci, čímž se nespustí setTimeout pro další refresh
+            await notifyDiscord("Byla detekována hCaptcha! Bot se zastavil.");
+            return;
         }
 
-        // 2. INICIALIZACE TW CHEESE (pokud neexistuje)
         if (window.TwCheese === undefined) {
             const core = {
                 ROOT: REPO_URL,
@@ -50,10 +45,8 @@
                 fetchLib: async function(path) {
                     return new Promise((res, rej) => {
                         $.ajax(`${this.ROOT}/${path}`, {
-                            cache: true,
-                            dataType: "script",
-                            complete: res,
-                            error: (xhr) => rej(new Error(`Chyba načítání: ${path}`))
+                            cache: true, dataType: "script", complete: res,
+                            error: (xhr) => rej(new Error(`Chyba: ${path}`))
                         });
                     });
                 },
@@ -61,10 +54,8 @@
                 use(id) { this.tools[id].use(); },
                 has(id) { return !!this.tools[id]; }
             };
-
             core.loadVendorLibsMinified = (cb) => core.fetchLib(`dist/vendor.min.js?${cb}`);
             core.loadToolCompiled = (id, cb) => core.fetchLib(`dist/tool/setup-only/${id}.min.js?${cb}`);
-            
             window.TwCheese = core;
 
             try {
@@ -72,35 +63,50 @@
                 await TwCheese.loadToolCompiled('Sidebar', 'b020ae3be1df353f2aefbc1f2662d0cf');
                 TwCheese.use('Sidebar');
             } catch (err) {
-                await notifyDiscord(`Chyba při inicializaci skriptu: ${err.message}`);
+                await notifyDiscord(`Chyba inicializace: ${err.message}`);
                 return;
             }
         }
 
-        // 3. SPUŠTĚNÍ SBĚRU
         try {
             if (!TwCheese.has(TOOL_ID)) {
                 await TwCheese.loadToolCompiled(TOOL_ID, 'edf88e826f1d77c559ccfac91be036d2');
             }
             TwCheese.use(TOOL_ID);
-            console.log('[Bot] Sběr úspěšně spuštěn.');
+            console.log('[Bot] ASS spuštěn, čekám na vyplnění vojska...');
+
+            // --- PŘIROZENÉ ODESÍLÁNÍ S PRODLEVOU ---
+            setTimeout(async () => {
+                const buttons = Array.from(document.querySelectorAll('.btn-send, .free_send_button'));
+                let count = 0;
+
+                for (const btn of buttons) {
+                    if (!btn.classList.contains('btn-disabled') && btn.offsetParent !== null) {
+                        btn.click();
+                        count++;
+                        // Náhodná pauza mezi kliky 1.2 až 2 sekundy
+                        const humanDelay = 1200 + Math.floor(Math.random() * 800);
+                        await sleep(humanDelay);
+                    }
+                }
+                console.log(`[Bot] Automaticky odesláno ${count} sběrů s přirozenou prodlevou.`);
+            }, 3000); 
+
         } catch (err) {
-            await notifyDiscord(`Chyba při spouštění nástroje ASS: ${err.message}`);
+            await notifyDiscord(`Chyba ASS: ${err.message}`);
             return;
         }
 
-        // 4. PLANOVÁNÍ DALŠÍHO KOLA
-        const nextRun = WAIT_TIME + RANDOM_VARIATION;
-        console.log(`[Bot] Další refresh za ${Math.round(nextRun / 60000)} minut.`);
+        const minutes = Math.floor(TOTAL_DELAY / 60000);
+        console.log(`[Bot] Další refresh za ${minutes} minut.`);
         
         setTimeout(() => {
-            // Kontrola Captchy těsně před refreshem pro jistotu
             if (!isCaptchaPresent()) {
                 location.reload();
             } else {
-                notifyDiscord("Captcha se objevila před refreshem. Zastavuji.");
+                notifyDiscord("Captcha před refreshem! Stop.");
             }
-        }, nextRun);
+        }, TOTAL_DELAY);
     }
 
     runScavenging();
