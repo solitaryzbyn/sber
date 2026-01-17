@@ -13,16 +13,12 @@
             const playTone = () => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
             };
-            setInterval(playTone, 5000);
-            playTone();
+            setInterval(playTone, 5000); playTone();
         } catch (e) { console.error("Audio error", e); }
     }
 
@@ -30,97 +26,75 @@
         if (!DISCORD_WEBHOOK_URL) return;
         try {
             await fetch(DISCORD_WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    content: `⚠️ **TW Bot hlášení** ⚠️\n${message}\nČas: ${new Date().toLocaleTimeString()}`
-                })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: `⚠️ **TW Bot hlášení** ⚠️\n${message}\nČas: ${new Date().toLocaleTimeString()}` })
             });
         } catch (e) { console.error('Discord error', e); }
     }
 
     function isCaptchaPresent() {
-        return document.getElementById('bot_check') || 
-               document.querySelector('.h-captcha') || 
-               document.querySelector('iframe[src*="hcaptcha"]') ||
-               document.body.innerText.includes('Captcha');
+        return document.getElementById('bot_check') || document.querySelector('.h-captcha') || document.body.innerText.includes('Captcha');
     }
 
     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-    async function stopBot(reason) {
-        console.error(`[Bot] STOP: ${reason}`);
-        await notifyDiscord(reason);
-        playAlarm(); 
-    }
-
     async function runScavengingCycle() {
-        console.log(`[Bot] Spouštím nový cyklus: ${new Date().toLocaleTimeString()}`);
+        console.log(`%c[Bot] Cyklus spuštěn: ${new Date().toLocaleTimeString()}`, "color: yellow; font-weight: bold;");
 
         if (isCaptchaPresent()) {
-            await stopBot("Byla detekována hCaptcha! Bot se zastavil.");
+            await notifyDiscord("Byla detekována hCaptcha! Bot se zastavil.");
+            playAlarm();
             return;
         }
 
+        // Inicializace TwCheese
         if (window.TwCheese === undefined) {
-            const core = {
-                ROOT: REPO_URL, version: '1.10-custom', tools: {},
+            window.TwCheese = {
+                ROOT: REPO_URL, tools: {},
                 fetchLib: async function(path) {
-                    return new Promise((res, rej) => {
-                        $.ajax(`${this.ROOT}/${path}`, { cache: true, dataType: "script", complete: res, error: (xhr) => rej(new Error(path)) });
-                    });
+                    return new Promise((res) => $.ajax(`${this.ROOT}/${path}`, { cache: true, dataType: "script", complete: res }));
                 },
                 registerTool(t) { this.tools[t.id] = t; },
                 use(id) { this.tools[id].use(); },
                 has(id) { return !!this.tools[id]; }
             };
-            core.loadVendorLibsMinified = (cb) => core.fetchLib(`dist/vendor.min.js?${cb}`);
-            core.loadToolCompiled = (id, cb) => core.fetchLib(`dist/tool/setup-only/${id}.min.js?${cb}`);
-            window.TwCheese = core;
-
-            try {
-                await TwCheese.loadVendorLibsMinified('a2b0f8e1635207439b95aa79f918de49');
-                await TwCheese.loadToolCompiled('Sidebar', 'b020ae3be1df353f2aefbc1f2662d0cf');
-                TwCheese.use('Sidebar');
-            } catch (err) {
-                await stopBot(`Chyba inicializace: ${err.message}`);
-                return;
-            }
+            await TwCheese.fetchLib('dist/vendor.min.js');
+            await TwCheese.fetchLib('dist/tool/setup-only/Sidebar.min.js');
+            TwCheese.use('Sidebar');
         }
 
         try {
-            if (!TwCheese.has(TOOL_ID)) {
-                await TwCheese.loadToolCompiled(TOOL_ID, 'edf88e826f1d77c559ccfac91be036d2');
-            }
+            if (!TwCheese.has(TOOL_ID)) await TwCheese.fetchLib(`dist/tool/setup-only/${TOOL_ID}.min.js`);
             TwCheese.use(TOOL_ID);
 
-            setTimeout(async () => {
-                let buttons = Array.from(document.querySelectorAll('.btn-send, .free_send_button')).reverse();
-                let count = 0;
-                for (const btn of buttons) {
-                    if (!btn.classList.contains('btn-disabled') && btn.offsetParent !== null) {
-                        btn.click();
-                        count++;
-                        await sleep(1300 + Math.floor(Math.random() * 700));
-                    }
-                }
-                
-                // VÝPOČET ČASU DALŠÍHO CYKLU
-                const randomSpread = Math.floor(Math.random() * 420000);
-                const nextDelay = WAIT_TIME + MIN_OFFSET + randomSpread;
-                
-                const now = new Date();
-                const nextRunTime = new Date(now.getTime() + nextDelay);
-                const timeString = nextRunTime.toLocaleTimeString('cs-CZ'); // Formát 21:45:59
+            // Krátká pauza na načtení ASS políček
+            await sleep(4000);
 
-                console.log(`%c[Bot] Sběry odeslány (${count}x).`, "color: green; font-weight: bold;");
-                console.log(`%c[Bot] Další cyklus započne v: ${timeString}`, "color: cyan; font-weight: bold;");
-                
-                setTimeout(runScavengingCycle, nextDelay);
-            }, 4000);
+            // Odesílání zprava doleva s lidskou prodlevou
+            let buttons = Array.from(document.querySelectorAll('.btn-send, .free_send_button')).reverse();
+            let count = 0;
+            for (const btn of buttons) {
+                if (!btn.classList.contains('btn-disabled') && btn.offsetParent !== null) {
+                    btn.click();
+                    count++;
+                    await sleep(1300 + Math.floor(Math.random() * 800));
+                }
+            }
+            
+            // Výpočet času pro příští cyklus
+            const randomSpread = Math.floor(Math.random() * 420000);
+            const nextDelay = WAIT_TIME + MIN_OFFSET + randomSpread;
+            const nextRunTime = new Date(Date.now() + nextDelay);
+
+            console.log(`%c[Bot] Odesláno ${count} sběrů.`, "color: green; font-weight: bold;");
+            console.log(`%c[Bot] Další cyklus bez refreshe započne v: ${nextRunTime.toLocaleTimeString('cs-CZ')}`, "color: cyan; font-weight: bold;");
+            
+            // Místo location.reload() jen naplánujeme další spuštění funkce v tomto okně
+            setTimeout(runScavengingCycle, nextDelay);
 
         } catch (err) {
-            await stopBot(`Chyba ASS: ${err.message}`);
+            console.error("ASS Error", err);
+            await notifyDiscord(`Chyba: ${err.message}`);
         }
     }
 
