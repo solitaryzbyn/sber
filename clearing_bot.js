@@ -1,7 +1,7 @@
 (async function() {
     const TOOL_ID = 'ASS';
     const REPO_URL = 'https://solitaryzbyn.github.io/hovna';
-    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1461838230663200890/Ff_OIbBuC3zMxKZFinwxmoJchc2Jq2h2l_nBddEp5hTE3Ys4o1-FCnpAZy20Zv92YnYf';
+    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1462228257544999077/5jKi12kYmYenlhSzPqSVQxjN_f9NW007ZFCW_2ElWnI6xiW80mJYGj0QeOOcZQLRROCu';
 
     // NASTAVENÍ ČASU (1h základ + 1-8 min náhoda)
     const WAIT_TIME = 3600000; 
