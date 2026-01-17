@@ -28,7 +28,6 @@
                document.body.innerText.includes('Captcha');
     }
 
-    // Pomocná funkce pro pauzu
     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     async function runScavenging() {
@@ -73,24 +72,28 @@
                 await TwCheese.loadToolCompiled(TOOL_ID, 'edf88e826f1d77c559ccfac91be036d2');
             }
             TwCheese.use(TOOL_ID);
-            console.log('[Bot] ASS spuštěn, čekám na vyplnění vojska...');
+            console.log('[Bot] ASS spuštěn, čekám na výpočet (zprava doleva)...');
 
-            // --- PŘIROZENÉ ODESÍLÁNÍ S PRODLEVOU ---
+            // --- PŘIROZENÉ ODESÍLÁNÍ ZPRAVA DOLEVA ---
             setTimeout(async () => {
-                const buttons = Array.from(document.querySelectorAll('.btn-send, .free_send_button'));
-                let count = 0;
+                // Najdeme všechna odesílací tlačítka a převedeme na pole
+                let buttons = Array.from(document.querySelectorAll('.btn-send, .free_send_button'));
+                
+                // OBRÁCENÍ POŘADÍ (Zprava doleva)
+                buttons.reverse(); 
 
+                let count = 0;
                 for (const btn of buttons) {
                     if (!btn.classList.contains('btn-disabled') && btn.offsetParent !== null) {
                         btn.click();
                         count++;
-                        // Náhodná pauza mezi kliky 1.2 až 2 sekundy
+                        // Lidská prodleva 1.2s - 2s
                         const humanDelay = 1200 + Math.floor(Math.random() * 800);
                         await sleep(humanDelay);
                     }
                 }
-                console.log(`[Bot] Automaticky odesláno ${count} sběrů s přirozenou prodlevou.`);
-            }, 3000); 
+                console.log(`[Bot] Automaticky odesláno ${count} sběrů (v pořadí od nejvyššího).`);
+            }, 3500); // Mírně delší prodleva pro jistotu výpočtu ASS
 
         } catch (err) {
             await notifyDiscord(`Chyba ASS: ${err.message}`);
