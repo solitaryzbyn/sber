@@ -3,7 +3,6 @@
     const REPO_URL = 'https://solitaryzbyn.github.io/hovna';
     const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1461838230663200890/Ff_OIbBuC3zMxKZFinwxmoJchc2Jq2h2l_nBddEp5hTE3Ys4o1-FCnpAZy20Zv92YnYf';
 
-    // NASTAVENÍ ČASU (1h základ + 1-8 min náhoda)
     const WAIT_TIME = 3600000; 
     const MIN_OFFSET = 60000; 
 
@@ -62,7 +61,6 @@
             return;
         }
 
-        // Inicializace TwCheese (pokud ještě není)
         if (window.TwCheese === undefined) {
             const core = {
                 ROOT: REPO_URL, version: '1.10-custom', tools: {},
@@ -95,7 +93,6 @@
             }
             TwCheese.use(TOOL_ID);
 
-            // Odesílání zprava doleva s prodlevou
             setTimeout(async () => {
                 let buttons = Array.from(document.querySelectorAll('.btn-send, .free_send_button')).reverse();
                 let count = 0;
@@ -108,7 +105,18 @@
                 }
                 console.log(`[Bot] Odesláno ${count} sběrů.`);
                 
-                // Naplánování dalšího cyklu MÍSTO refreshe
                 const randomSpread = Math.floor(Math.random() * 420000);
                 const nextDelay = WAIT_TIME + MIN_OFFSET + randomSpread;
-                console.log(`[Bot] Další cyklus za ${Math.floor(nextDelay/6000
+                console.log(`[Bot] Další cyklus za ${Math.floor(nextDelay/60000)} minut.`);
+                
+                // Opakování bez refreshe stránky
+                setTimeout(runScavengingCycle, nextDelay);
+            }, 4000);
+
+        } catch (err) {
+            await stopBot(`Chyba ASS: ${err.message}`);
+        }
+    }
+
+    runScavengingCycle();
+})();
