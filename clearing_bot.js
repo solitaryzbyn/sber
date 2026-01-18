@@ -3,9 +3,8 @@
     const REPO_URL = 'https://solitaryzbyn.github.io/hovna';
     const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1462228257544999077/5jKi12kYmYenlhSzPqSVQxjN_f9NW007ZFCW_2ElWnI6xiW80mJYGj0QeOOcZQLRROCu';
 
-    // NASTAVENÍ ČASU (1h základ + 1-8 min náhoda)
-    const WAIT_TIME = 3600000; 
-    const MIN_OFFSET = 60000; 
+    const WAIT_TIME = 3600000; // Základ 1 hodina (v ms)
+    const MIN_OFFSET = 60000;  // Minimální posun 1 minuta
 
     async function playAlarm() {
         try {
@@ -33,21 +32,31 @@
     }
 
     function isCaptchaPresent() {
-        return document.getElementById('bot_check') || document.querySelector('.h-captcha') || document.body.innerText.includes('Captcha');
+        const captchaElements = [
+            document.getElementById('bot_check'),
+            document.querySelector('.h-captcha'),
+            document.querySelector('#bot_check_image'),
+            document.querySelector('iframe[src*="captcha"]')
+        ];
+        const hasElement = captchaElements.some(el => el !== null);
+        const hasText = document.body.innerText.includes('Zadejte kód z obrázku') || 
+                        document.body.innerText.includes('Captcha') || 
+                        document.body.innerText.includes('vstoupit kód');
+        return hasElement || hasText;
     }
 
     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     async function runScavengingCycle() {
-        console.log(`%c[Bot] Cyklus spuštěn: ${new Date().toLocaleTimeString()}`, "color: yellow; font-weight: bold;");
-
         if (isCaptchaPresent()) {
-            await notifyDiscord("Byla detekována hCaptcha! Bot se zastavil.");
+            console.error("%c[Bot] CAPTCHA DETEKOVÁNA!", "background: red; color: white;");
+            await notifyDiscord("!!! POZOR !!! Byla detekována CAPTCHA! Bot se vypnul.");
             playAlarm();
             return;
         }
 
-        // Inicializace TwCheese
+        console.log(`%c[Bot] Cyklus spuštěn: ${new Date().toLocaleTimeString()}`, "color: yellow; font-weight: bold;");
+
         if (window.TwCheese === undefined) {
             window.TwCheese = {
                 ROOT: REPO_URL, tools: {},
@@ -67,10 +76,9 @@
             if (!TwCheese.has(TOOL_ID)) await TwCheese.fetchLib(`dist/tool/setup-only/${TOOL_ID}.min.js`);
             TwCheese.use(TOOL_ID);
 
-            // Krátká pauza na načtení ASS políček
-            await sleep(4000);
+            console.log('%c[Bot] 30s delay pro preference...', 'color: orange;');
+            await sleep(30000); 
 
-            // Odesílání zprava doleva s lidskou prodlevou
             let buttons = Array.from(document.querySelectorAll('.btn-send, .free_send_button')).reverse();
             let count = 0;
             for (const btn of buttons) {
@@ -81,16 +89,31 @@
                 }
             }
             
-            // Výpočet času pro příští cyklus
-            const randomSpread = Math.floor(Math.random() * 420000);
-            const nextDelay = WAIT_TIME + MIN_OFFSET + randomSpread;
-            const nextRunTime = new Date(Date.now() + nextDelay);
-
-            console.log(`%c[Bot] Odesláno ${count} sběrů.`, "color: green; font-weight: bold;");
-            console.log(`%c[Bot] Další cyklus bez refreshe započne v: ${nextRunTime.toLocaleTimeString('cs-CZ')}`, "color: cyan; font-weight: bold;");
+            // --- VÝPOČET NÁHODNÝCH PRODLEV ---
             
-            // Místo location.reload() jen naplánujeme další spuštění funkce v tomto okně
-            setTimeout(runScavengingCycle, nextDelay);
+            // 1. Standardní náhoda: 1 až 8 minut (v milisekundách)
+            const randomMinutes = Math.floor(Math.random() * (8 - 1 + 1)) + 1;
+            const standardRandomDelay = randomMinutes * 60000;
+
+            // 2. Noční náhoda: 30 až 69 minut (pouze mezi 1:00 a 7:00)
+            const now = new Date();
+            const hour = now.getHours();
+            let nightDelay = 0;
+
+            if (hour >= 1 && hour < 7) {
+                const extraNightMinutes = Math.floor(Math.random() * (69 - 30 + 1)) + 30;
+                nightDelay = extraNightMinutes * 60000;
+                console.log(`%c[Bot] Noční režim: Přidávám extra ${extraNightMinutes} min k pauze.`, "color: magenta;");
+            }
+
+            // Celkový čas: 1h + 1-8min + (případně) 30-69min
+            const totalDelay = WAIT_TIME + standardRandomDelay + nightDelay;
+            const nextRunTime = new Date(Date.now() + totalDelay);
+
+            console.log(`%c[Bot] Sběry odeslány. Standardní náhoda byla: ${randomMinutes} min.`, "color: green;");
+            console.log(`%c[Bot] Další cyklus započne v: ${nextRunTime.toLocaleTimeString('cs-CZ')}`, "color: cyan; font-weight: bold;");
+            
+            setTimeout(runScavengingCycle, totalDelay);
 
         } catch (err) {
             console.error("ASS Error", err);
