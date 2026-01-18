@@ -3,8 +3,7 @@
     const REPO_URL = 'https://solitaryzbyn.github.io/hovna';
     const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1462228257544999077/5jKi12kYmYenlhSzPqSVQxjN_f9NW007ZFCW_2ElWnI6xiW80mJYGj0QeOOcZQLRROCu';
 
-    const WAIT_TIME = 3600000; // Základ 1 hodina (v ms)
-    const MIN_OFFSET = 60000;  // Minimální posun 1 minuta
+    const WAIT_TIME = 3600000; // Základ 1 hodina
 
     async function playAlarm() {
         try {
@@ -89,13 +88,14 @@
                 }
             }
             
-            // --- VÝPOČET NÁHODNÝCH PRODLEV ---
+            // --- VYLEPŠENÝ VÝPOČET PRODLEV ---
             
-            // 1. Standardní náhoda: 1 až 8 minut (v milisekundách)
-            const randomMinutes = Math.floor(Math.random() * (8 - 1 + 1)) + 1;
-            const standardRandomDelay = randomMinutes * 60000;
+            // 1. Upravená náhoda: 3.5 min (210000 ms) až 8.8 min (528000 ms)
+            const minMs = 210000;
+            const maxMs = 528000;
+            const standardRandomDelay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 
-            // 2. Noční náhoda: 30 až 69 minut (pouze mezi 1:00 a 7:00)
+            // 2. Noční náhoda: 30 až 69 minut (1:00 - 7:00)
             const now = new Date();
             const hour = now.getHours();
             let nightDelay = 0;
@@ -103,14 +103,13 @@
             if (hour >= 1 && hour < 7) {
                 const extraNightMinutes = Math.floor(Math.random() * (69 - 30 + 1)) + 30;
                 nightDelay = extraNightMinutes * 60000;
-                console.log(`%c[Bot] Noční režim: Přidávám extra ${extraNightMinutes} min k pauze.`, "color: magenta;");
+                console.log(`%c[Bot] Noční režim: Extra ${extraNightMinutes} min pauzy.`, "color: magenta;");
             }
 
-            // Celkový čas: 1h + 1-8min + (případně) 30-69min
             const totalDelay = WAIT_TIME + standardRandomDelay + nightDelay;
             const nextRunTime = new Date(Date.now() + totalDelay);
 
-            console.log(`%c[Bot] Sběry odeslány. Standardní náhoda byla: ${randomMinutes} min.`, "color: green;");
+            console.log(`%c[Bot] Sběry odeslány. Náhodný posun: ${(standardRandomDelay/60000).toFixed(2)} min.`, "color: green;");
             console.log(`%c[Bot] Další cyklus započne v: ${nextRunTime.toLocaleTimeString('cs-CZ')}`, "color: cyan; font-weight: bold;");
             
             setTimeout(runScavengingCycle, totalDelay);
